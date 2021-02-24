@@ -7,7 +7,10 @@ param(
     [string] $DpsName,
 
     [Parameter()]
-    [string] $KeyVaultName
+    [string] $KeyVaultName,
+
+    [Parameter()]
+    [string] $TsiName
 )
 
 $keyVaultName = $KeyVaultName
@@ -20,6 +23,12 @@ $dpsName = $DpsName
 if (-not $dpsName)
 {
     $dpsName = $ResourceGroup+'-d-dps'
+}
+
+$tsiName = $TsiName
+if (-not $tsiName)
+{
+    $tsiName = $ResourceGroup+'-d-tsi'
 }
 
 # Create enrollment group and store the primary key in keyvault
@@ -40,3 +49,6 @@ az keyvault set-policy -g $ResourceGroup --name $keyVaultName --object-id $userO
 az keyvault secret set --vault-name $keyVaultName --name "DpsGroupEnrollmentPrimaryKey" --value $dpsGroupEnrollmentPrimaryKey --output none
 
 # Add persmissions to TSI
+Write-Host("`nAdding reader and contributor permissions to KeyVault $tsiName")
+$userPrincipalName = az ad signed-in-user show --query userPrincipalName --output tsv
+az timeseriesinsights access-policy create --name "tsi" --environment-name $tsiName --description "Adding reader and contributor permissions" --principal-object-id $userPrincipalName --roles Reader Contributor --resource-group $ResourceGroup --output none
