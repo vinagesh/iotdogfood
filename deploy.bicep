@@ -1,43 +1,100 @@
-param ServerFarmName string {
-  default: '${resourceGroup().name}-dogfood-srv'
+param HubName string {
   metadata: {
-    description: 'The name of the server farm to host the cloud app.'
+    description: 'The name of the main IoT hub instance.'
   }
 }
 
-param WebsiteName string {
-  default: '${resourceGroup().name}-dogfood-website'
+param CloudAppContainerName string {
+  default: '${resourceGroup().name}-d-cloudapp'
   metadata: {
-    description: 'The name of the website to host the cloud app.'
+    description: 'The name of the conatiner instance.'
   }
 }
 
-resource serverfarm 'Microsoft.Web/serverfarms@2020-06-01' = {
-  name: ServerFarmName
+param CloudAppDnsName string {
+  default: '${resourceGroup().name}-d-cloudapp'
+  metadata: {
+    description: 'The dns name of the conatiner instance.'
+  }
+}
+
+param RegistryServer string {
+  default: 'swickcontainers.azurecr.io'
+  metadata: {
+    description: 'The container registry login server.'
+  }
+}
+
+param RegistryServerUserName string {
+  default: 'swickcontainers'
+  metadata: {
+    description: 'The container registry login server user name.'
+  }
+}
+
+param RegistryServerPassword string {
+  secure: true
+  metadata: {
+    description: 'The container registry login server password.'
+  }
+}
+
+param CloudAppContainerImageName string {
+  default: 'swickcontainers.azurecr.io/dogfoodcloudapp:latest'
+  metadata: {
+    description: 'The container registry login server password.'
+  }
+}
+
+var hubKeysId = resourceId('Microsoft.Devices/IotHubs/Iothubkeys', HubName, 'iothubowner')
+resource container 'Microsoft.ContainerInstance/containerGroups@2019-12-01' = {
+  name: CloudAppContainerName
   location: resourceGroup().location
-  sku: {
-    name: 'S1'
-    tier: 'Standard'
-    size: 'S1'
-    family: 'S'
-    capacity: 1
-  }
-  kind: 'app'
-}
-
-resource website 'Microsoft.Web/sites@2020-06-01' = {
-  name: WebsiteName
-  location: resourceGroup().location
-  properties: {
-    serverFarmId: serverfarm.id    
-  }
-}
-
-resource sourceControl 'Microsoft.Web/sites/sourcecontrols@2020-06-01' = {
-  name: '${website.name}/web'
   properties: {    
-    repoUrl: 'https://github.com/vinagesh/iotdogfood.git'
-    branch: 'master'
-    isManualIntegration: true
-  }
+    containers: [
+      {        
+        name: CloudAppContainerName
+        properties: {
+          image: '${CloudAppContainerImageName}'
+          resources: {
+            requests: {
+              cpu: 1
+              memoryInGB: 1
+            }
+          }                        
+          ports: [
+            {
+              port: 80
+              protocol: 'TCP'
+            }
+          ] 
+          environmentVariables: [
+            {
+              name: 'IotHubConnectionString'
+              value: 'HostName=${HubName}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=${listkeys(hubKeysId, '2019-11-04').primaryKey}'
+            }
+          ]
+        }        
+      }
+    ]
+    restartPolicy: 'OnFailure'
+    imageRegistryCredentials: [
+      {
+        server: '${RegistryServer}'
+        username: '${RegistryServerUserName}'
+        password: RegistryServerPassword
+      }
+    ]
+    ipAddress: {
+      type: 'Public'
+      ports: [
+        {
+          port: 80
+          protocol: 'TCP'
+        }
+      ]
+      dnsNameLabel: CloudAppDnsName
+    }
+    osType: 'Linux'
+  }  
 }

@@ -2,62 +2,111 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "ServerFarmName": {
+    "HubName": {
       "type": "string",
       "metadata": {
-        "description": "The name of the server farm to host the cloud app."
-      },
-      "defaultValue": "[format('{0}-dogfood-srv', resourceGroup().name)]"
+        "description": "The name of the main IoT hub instance."
+      }
     },
-    "WebsiteName": {
+    "CloudAppContainerName": {
       "type": "string",
       "metadata": {
-        "description": "The name of the website to host the cloud app."
+        "description": "The name of the conatiner instance."
       },
-      "defaultValue": "[format('{0}-dogfood-website', resourceGroup().name)]"
+      "defaultValue": "[format('{0}-d-cloudapp', resourceGroup().name)]"
+    },
+    "CloudAppDnsName": {
+      "type": "string",
+      "metadata": {
+        "description": "The dns name of the conatiner instance."
+      },
+      "defaultValue": "[format('{0}-d-cloudapp', resourceGroup().name)]"
+    },
+    "RegistryServer": {
+      "type": "string",
+      "metadata": {
+        "description": "The container registry login server."
+      },
+      "defaultValue": "swickcontainers.azurecr.io"
+    },
+    "RegistryServerUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "The container registry login server user name."
+      },
+      "defaultValue": "swickcontainers"
+    },
+    "RegistryServerPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "The container registry login server password."
+      }
+    },
+    "CloudAppContainerImageName": {
+      "type": "string",
+      "metadata": {
+        "description": "The container registry login server password."
+      },
+      "defaultValue": "swickcontainers.azurecr.io/dogfoodcloudapp:latest"
     }
   },
   "functions": [],
-  "variables": {},
+  "variables": {
+    "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', parameters('HubName'), 'iothubowner')]"
+  },
   "resources": [
     {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2020-06-01",
-      "name": "[parameters('ServerFarmName')]",
-      "location": "[resourceGroup().location]",
-      "sku": {
-        "name": "S1",
-        "tier": "Standard",
-        "size": "S1",
-        "family": "S",
-        "capacity": 1
-      },
-      "kind": "app"
-    },
-    {
-      "type": "Microsoft.Web/sites",
-      "apiVersion": "2020-06-01",
-      "name": "[parameters('WebsiteName')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2019-12-01",
+      "name": "[parameters('CloudAppContainerName')]",
       "location": "[resourceGroup().location]",
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('ServerFarmName'))]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', parameters('ServerFarmName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Web/sites/sourcecontrols",
-      "apiVersion": "2020-06-01",
-      "name": "[format('{0}/web', parameters('WebsiteName'))]",
-      "properties": {
-        "repoUrl": "https://github.com/vinagesh/iotdogfood.git",
-        "branch": "master",
-        "isManualIntegration": true
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', parameters('WebsiteName'))]"
-      ]
+        "containers": [
+          {
+            "name": "[parameters('CloudAppContainerName')]",
+            "properties": {
+              "image": "[format('{0}', parameters('CloudAppContainerImageName'))]",
+              "resources": {
+                "requests": {
+                  "cpu": 1,
+                  "memoryInGB": 1
+                }
+              },
+              "ports": [
+                {
+                  "port": 80,
+                  "protocol": "TCP"
+                }
+              ],
+              "environmentVariables": [
+                {
+                  "name": "IotHubConnectionString",
+                  "value": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', parameters('HubName'), listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]"
+                }
+              ]
+            }
+          }
+        ],
+        "restartPolicy": "OnFailure",
+        "imageRegistryCredentials": [
+          {
+            "server": "[format('{0}', parameters('RegistryServer'))]",
+            "username": "[format('{0}', parameters('RegistryServerUserName'))]",
+            "password": "[parameters('RegistryServerPassword')]"
+          }
+        ],
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            }
+          ],
+          "dnsNameLabel": "[parameters('CloudAppDnsName')]"
+        },
+        "osType": "Linux"
+      }
     }
   ],
   "outputs": {}

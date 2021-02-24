@@ -1,58 +1,23 @@
-param KeyVaultName string {
-  default: '${resourceGroup().name}-dogfood-kv'
-  minLength: 3
-  maxLength: 24
-  metadata: {
-    description: 'The name of the key vault for storing necessary secrets.'
-  }
-}
-
-param UserObjectId string {
-  metadata: {
-    description: 'Signed in user objectId'
-  }
-}
-
-param HubName string {
-  default: '${resourceGroup().name}-dogfood-hub'
-  metadata: {
-    description: 'The name of the main IoT hub instance.'
-  }
-}
-
-param DpsName string {
-  default: '${resourceGroup().name}-dogfood-dps'
-  metadata: {
-    description: 'The name of DPS instance.'
-  }
-}
-
-param TsiName string {
-  default: '${resourceGroup().name}-dogfood-tsi'
-  metadata: {
-    description: 'The name of TSI instance.'
-  }
-}
-
-param TsiStorageAccountName string {
-  default: '${resourceGroup().name}dogfoodstorage'
-  metadata: {
-    description: 'The storage account name used by TSI instance.'
-  }
-}
-
-param AzureMapsAccountName string {
-  default: '${resourceGroup().name}-dogfood-maps'
-  metadata: {
-    description: 'The azure maps account name.'
-  }
-}
+var KeyVaultName = '${resourceGroup().name}-d-kv'
+var HubName = '${resourceGroup().name}-d-hub'
+var DpsName = '${resourceGroup().name}-d-dps'
+var TsiName = '${resourceGroup().name}-d-tsi'
+var TsiStorageAccountName = '${resourceGroup().name}dstorage'
+var AzureMapsAccountName = '${resourceGroup().name}-d-maps'
 
 resource iotHub 'Microsoft.Devices/IotHubs@2020-08-01' = {
   name: HubName
   location: resourceGroup().location
   properties: {
     routing: {
+      fallbackRoute: {
+        name: '$fallback'
+        source: 'DeviceMessages'
+        isEnabled: true
+        endpointNames: [
+          'events'
+        ]
+      }
       routes: [
         {
           name: 'deviceLifecycle'
@@ -65,6 +30,14 @@ resource iotHub 'Microsoft.Devices/IotHubs@2020-08-01' = {
         {
           name: 'digitalTwinChanges'
           source: 'DigitalTwinChangeEvents'
+          isEnabled: true
+          endpointNames: [
+            'events'
+          ]
+        }
+        {
+          name: 'deviceTwinChanges'
+          source: 'TwinChangeEvents'
           isEnabled: true
           endpointNames: [
             'events'
@@ -85,8 +58,9 @@ resource appConsumerGroup 'Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerG
   }
 }
 
+var tsiGroupName = 'tsi'
 resource tsiConsumerGroup 'Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups@2020-03-01' = {
-  name: '${iotHub.name}/events/tsi'
+  name: '${iotHub.name}/events/${tsiGroupName}'
   properties: {
   }
 }
@@ -149,12 +123,15 @@ resource tsiEventSource 'Microsoft.TimeSeriesInsights/environments/eventsources@
   location: resourceGroup().location
   properties: {
     iotHubName: iotHub.name
-    consumerGroupName: tsiConsumerGroup.name
+    consumerGroupName: tsiGroupName
     eventSourceResourceId: iotHub.id
     keyName: 'iothubowner'
     sharedAccessKey: '${listkeys(hubKeysId, '2019-11-04').primaryKey}'
     timestampPropertyName: 'iothub-connection-device-id'
   }
+  dependsOn: [
+    tsiConsumerGroup
+  ]
 }
 
 resource azureMaps 'Microsoft.Maps/accounts@2020-02-01-preview' = {
@@ -173,21 +150,6 @@ resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
     enabledForTemplateDeployment: false
     enabledForDiskEncryption: false
     accessPolicies: [
-      {
-        objectId: UserObjectId
-        tenantId: subscription().tenantId
-        permissions: {
-          secrets: [
-            'all'
-          ]
-          certificates: [
-            'all'
-          ]
-          keys: [
-            'all'
-          ]
-        }
-      }
     ]
     tenantId: subscription().tenantId
     sku: {
@@ -206,17 +168,25 @@ resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
   }
 }
 
-resource iotHubConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
-  name: concat('${keyVault.name}', '/IotHubConnectionString')
-  properties: {
-    value: 'HostName=${iotHub.name}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=${listkeys(hubKeysId, '2019-11-04').primaryKey}'
-  }
-}
-
 resource eventHubEndpoint 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
   name: concat('${keyVault.name}', '/EventHubEndpoint')
   properties: {
     value: '${iotHub.properties.eventHubEndpoints.events.endpoint}'
+  }
+}
+
+resource eventHubPath 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
+  name: concat('${keyVault.name}', '/EventHubPath')
+  properties: {
+    value: '${iotHub.properties.eventHubEndpoints.events.path}'
+  }
+}
+
+var eventHubKeysId = resourceId('Microsoft.Devices/IotHubs/Iothubkeys', HubName, 'service')
+resource eventHubKey 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
+  name: concat('${keyVault.name}', '/EventHubKey')
+  properties: {
+    value: '${listkeys(eventHubKeysId, '2019-11-04').primaryKey}'
   }
 }
 

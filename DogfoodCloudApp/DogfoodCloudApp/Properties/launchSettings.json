@@ -1,10 +1,10 @@
-﻿{
+{
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:55955",
-      "sslPort": 44341
+      "applicationUrl": "http://localhost:64516",
+      "sslPort": 44377
     }
   },
   "profiles": {
@@ -18,10 +18,21 @@
     "DogfoodCloudApp": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
+        "IotHubConnectionString": "HostName=test2-d-hub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=UXzmjg4KwQ/Iieo+CGvE9XMcjrknFNV/7boEz7/sZCg=",
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "IotHubConnectionString": "HostName=test2-dogfood-hub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=P0Mol1NZpJR8C/4v2KjvXLPhXQEeCNhZh3Yxq5mOEWA="
+      },
+      "publishAllPorts": true,
+      "useSSL": true
     }
   }
 }

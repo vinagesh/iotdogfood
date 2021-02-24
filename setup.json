@@ -1,72 +1,37 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {
-    "KeyVaultName": {
-      "type": "string",
-      "minLength": 3,
-      "maxLength": 24,
-      "metadata": {
-        "description": "The name of the key vault for storing necessary secrets."
-      },
-      "defaultValue": "[format('{0}-dogfood-kv', resourceGroup().name)]"
-    },
-    "UserObjectId": {
-      "type": "string",
-      "metadata": {
-        "description": "Signed in user objectId. This value can be fetched by running the following in a powershell terminal. az ad signed-in-user show --query objectId"
-      }
-    },
-    "HubName": {
-      "type": "string",
-      "metadata": {
-        "description": "The name of the main IoT hub instance."
-      },
-      "defaultValue": "[format('{0}-dogfood-hub', resourceGroup().name)]"
-    },
-    "DpsName": {
-      "type": "string",
-      "metadata": {
-        "description": "The name of DPS instance."
-      },
-      "defaultValue": "[format('{0}-dogfood-dps', resourceGroup().name)]"
-    },
-    "TsiName": {
-      "type": "string",
-      "metadata": {
-        "description": "The name of TSI instance."
-      },
-      "defaultValue": "[format('{0}-dogfood-tsi', resourceGroup().name)]"
-    },
-    "TsiStorageAccountName": {
-      "type": "string",
-      "metadata": {
-        "description": "The storage account name used by TSI instance."
-      },
-      "defaultValue": "[format('{0}dogfoodstorage', resourceGroup().name)]"
-    },
-    "AzureMapsAccountName": {
-      "type": "string",
-      "metadata": {
-        "description": "The azure maps account name."
-      },
-      "defaultValue": "[format('{0}-dogfood-maps', resourceGroup().name)]"
-    }
-  },
+  "parameters": {},
   "functions": [],
   "variables": {
-    "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', parameters('HubName'), 'iothubowner')]",
-    "dpsKeysId": "[resourceId('Microsoft.Devices/ProvisioningServices/keys', parameters('DpsName'), 'provisioningserviceowner')]",
-    "azureMapsKeysId": "[resourceId('Microsoft.Maps/accounts', parameters('AzureMapsAccountName'))]"
+    "KeyVaultName": "[format('{0}-d-kv', resourceGroup().name)]",
+    "HubName": "[format('{0}-d-hub', resourceGroup().name)]",
+    "DpsName": "[format('{0}-d-dps', resourceGroup().name)]",
+    "TsiName": "[format('{0}-d-tsi', resourceGroup().name)]",
+    "TsiStorageAccountName": "[format('{0}dstorage', resourceGroup().name)]",
+    "AzureMapsAccountName": "[format('{0}-d-maps', resourceGroup().name)]",
+    "tsiGroupName": "tsi",
+    "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]",
+    "eventHubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'service')]",
+    "dpsKeysId": "[resourceId('Microsoft.Devices/ProvisioningServices/keys', variables('DpsName'), 'provisioningserviceowner')]",
+    "azureMapsKeysId": "[resourceId('Microsoft.Maps/accounts', variables('AzureMapsAccountName'))]"
   },
   "resources": [
     {
       "type": "Microsoft.Devices/IotHubs",
       "apiVersion": "2020-08-01",
-      "name": "[parameters('HubName')]",
+      "name": "[variables('HubName')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "routing": {
+          "fallbackRoute": {
+            "name": "$fallback",
+            "source": "DeviceMessages",
+            "isEnabled": true,
+            "endpointNames": [
+              "events"
+            ]
+          },
           "routes": [
             {
               "name": "deviceLifecycle",
@@ -83,6 +48,14 @@
               "endpointNames": [
                 "events"
               ]
+            },
+            {
+              "name": "deviceTwinChanges",
+              "source": "TwinChangeEvents",
+              "isEnabled": true,
+              "endpointNames": [
+                "events"
+              ]
             }
           ]
         }
@@ -95,25 +68,25 @@
     {
       "type": "Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups",
       "apiVersion": "2020-03-01",
-      "name": "[format('{0}/events/serviceapp', parameters('HubName'))]",
+      "name": "[format('{0}/events/serviceapp', variables('HubName'))]",
       "properties": {},
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]"
       ]
     },
     {
       "type": "Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups",
       "apiVersion": "2020-03-01",
-      "name": "[format('{0}/events/tsi', parameters('HubName'))]",
+      "name": "[format('{0}/events/{1}', variables('HubName'), variables('tsiGroupName'))]",
       "properties": {},
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]"
       ]
     },
     {
       "type": "Microsoft.Devices/provisioningServices",
       "apiVersion": "2017-11-15",
-      "name": "[parameters('DpsName')]",
+      "name": "[variables('DpsName')]",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "S1",
@@ -123,18 +96,18 @@
         "iotHubs": [
           {
             "location": "[resourceGroup().location]",
-            "connectionString": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', parameters('HubName'), listkeys(variables('hubKeysId'), '2020-01-01').primaryKey)]"
+            "connectionString": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', variables('HubName'), listkeys(variables('hubKeysId'), '2020-01-01').primaryKey)]"
           }
         ]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]"
       ]
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2018-02-01",
-      "name": "[parameters('TsiStorageAccountName')]",
+      "name": "[variables('TsiStorageAccountName')]",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Standard_LRS"
@@ -147,7 +120,7 @@
     {
       "type": "Microsoft.TimeSeriesInsights/environments",
       "apiVersion": "2020-05-15",
-      "name": "[parameters('TsiName')]",
+      "name": "[variables('TsiName')]",
       "location": "[resourceGroup().location]",
       "kind": "Gen2",
       "sku": {
@@ -156,8 +129,8 @@
       },
       "properties": {
         "storageConfiguration": {
-          "accountName": "[parameters('TsiStorageAccountName')]",
-          "managementKey": "[format('{0}', listkeys(resourceId('Microsoft.Storage/storageAccounts', parameters('TsiStorageAccountName')), '2018-02-01').keys[0].value)]"
+          "accountName": "[variables('TsiStorageAccountName')]",
+          "managementKey": "[format('{0}', listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('TsiStorageAccountName')), '2018-02-01').keys[0].value)]"
         },
         "timeSeriesIdProperties": [
           {
@@ -167,33 +140,33 @@
         ]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', parameters('TsiStorageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('TsiStorageAccountName'))]"
       ]
     },
     {
       "type": "Microsoft.TimeSeriesInsights/environments/eventsources",
       "apiVersion": "2020-05-15",
-      "name": "[format('{0}/dogfoodsource', parameters('TsiName'))]",
+      "name": "[format('{0}/dogfoodsource', variables('TsiName'))]",
       "kind": "Microsoft.IoTHub",
       "location": "[resourceGroup().location]",
       "properties": {
-        "iotHubName": "[parameters('HubName')]",
-        "consumerGroupName": "[format('{0}/events/tsi', parameters('HubName'))]",
-        "eventSourceResourceId": "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]",
+        "iotHubName": "[variables('HubName')]",
+        "consumerGroupName": "[variables('tsiGroupName')]",
+        "eventSourceResourceId": "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]",
         "keyName": "iothubowner",
         "sharedAccessKey": "[format('{0}', listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]",
         "timestampPropertyName": "iothub-connection-device-id"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]",
-        "[resourceId('Microsoft.TimeSeriesInsights/environments', parameters('TsiName'))]",
-        "[resourceId('Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups', split(format('{0}/events/tsi', parameters('HubName')), '/')[0], split(format('{0}/events/tsi', parameters('HubName')), '/')[1], split(format('{0}/events/tsi', parameters('HubName')), '/')[2])]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]",
+        "[resourceId('Microsoft.TimeSeriesInsights/environments', variables('TsiName'))]",
+        "[resourceId('Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups', split(format('{0}/events/{1}', variables('HubName'), variables('tsiGroupName')), '/')[0], split(format('{0}/events/{1}', variables('HubName'), variables('tsiGroupName')), '/')[1], split(format('{0}/events/{1}', variables('HubName'), variables('tsiGroupName')), '/')[2])]"
       ]
     },
     {
       "type": "Microsoft.Maps/accounts",
       "apiVersion": "2020-02-01-preview",
-      "name": "[parameters('AzureMapsAccountName')]",
+      "name": "[variables('AzureMapsAccountName')]",
       "location": "global",
       "sku": {
         "name": "S0"
@@ -202,29 +175,13 @@
     {
       "type": "Microsoft.KeyVault/vaults",
       "apiVersion": "2018-02-14",
-      "name": "[parameters('KeyVaultName')]",
+      "name": "[variables('KeyVaultName')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "enabledForDeployment": false,
         "enabledForTemplateDeployment": false,
         "enabledForDiskEncryption": false,
-        "accessPolicies": [
-          {
-            "objectId": "[parameters('UserObjectId')]",
-            "tenantId": "[subscription().tenantId]",
-            "permissions": {
-              "secrets": [
-                "all"
-              ],
-              "certificates": [
-                "all"
-              ],
-              "keys": [
-                "all"
-              ]
-            }
-          }
-        ],
+        "accessPolicies": [],
         "tenantId": "[subscription().tenantId]",
         "sku": {
           "name": "standard",
@@ -242,59 +199,70 @@
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
-      "name": "[concat(format('{0}', parameters('KeyVaultName')), '/IotHubConnectionString')]",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/EventHubEndpoint')]",
       "properties": {
-        "value": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', parameters('HubName'), listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]"
+        "value": "[format('{0}', reference(resourceId('Microsoft.Devices/IotHubs', variables('HubName'))).eventHubEndpoints.events.endpoint)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]",
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVaultName'))]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
-      "name": "[concat(format('{0}', parameters('KeyVaultName')), '/EventHubEndpoint')]",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/EventHubPath')]",
       "properties": {
-        "value": "[format('{0}', reference(resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))).eventHubEndpoints.events.endpoint)]"
+        "value": "[format('{0}', reference(resourceId('Microsoft.Devices/IotHubs', variables('HubName'))).eventHubEndpoints.events.path)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Devices/IotHubs', parameters('HubName'))]",
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVaultName'))]"
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
-      "name": "[concat(format('{0}', parameters('KeyVaultName')), '/DpsScopeId')]",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/EventHubKey')]",
       "properties": {
-        "value": "[format('{0}', reference(resourceId('Microsoft.Devices/provisioningServices', parameters('DpsName'))).idScope)]"
+        "value": "[format('{0}', listkeys(variables('eventHubKeysId'), '2019-11-04').primaryKey)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVaultName'))]",
-        "[resourceId('Microsoft.Devices/provisioningServices', parameters('DpsName'))]"
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
-      "name": "[concat(format('{0}', parameters('KeyVaultName')), '/DpsPrimaryKey')]",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/DpsScopeId')]",
+      "properties": {
+        "value": "[format('{0}', reference(resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))).idScope)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
+        "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/DpsPrimaryKey')]",
       "properties": {
         "value": "[format('{0}', listkeys(variables('dpsKeysId'), '2017-11-15').primaryKey)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVaultName'))]"
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
-      "name": "[concat(format('{0}', parameters('KeyVaultName')), '/AzureMapsPrimaryKey')]",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/AzureMapsPrimaryKey')]",
       "properties": {
         "value": "[format('{0}', listkeys(variables('azureMapsKeysId'), '2020-02-01-preview').primaryKey)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVaultName'))]"
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     }
   ],

@@ -66,6 +66,8 @@ namespace DogfoodCloudApp
                     spa.UseReactDevelopmentServer(npmScript: "start");
                 }
             });
+
+            Settings.Instance.Initialize();
         }
     }
 }
