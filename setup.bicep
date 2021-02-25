@@ -4,6 +4,13 @@ param userPrincipalId string {
   }
 }
 
+param roleAssignmentName string {
+  default: newGuid()
+  metadata: {
+    description: 'The role assignemnt id for creating dps enrollment groups.'
+  }
+}
+
 var KeyVaultName = '${resourceGroup().name}-d-kv'
 var HubName = '${resourceGroup().name}-d-hub'
 var DpsName = '${resourceGroup().name}-d-dps'
@@ -86,6 +93,45 @@ resource dps 'Microsoft.Devices/provisioningServices@2017-11-15' = {
       }
     ]
   }
+}
+
+var userIdentityName = 'dpsUserIdentity'
+resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: '${userIdentityName}'
+  location: resourceGroup().location
+}
+
+var contriburorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+resource dpsUserIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
+  name: '${roleAssignmentName}'
+  properties: {
+    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${contriburorRoleDefinitionId}'
+    principalId: '${reference(userIdentity.id, '2018-11-30').principalId}'
+  }
+  dependsOn: [
+    userIdentity
+  ]
+}
+
+var groupEnrollmentId = 'weatherstations'
+resource enrollmentGroupCreationScript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
+  name: 'createDpsEnrollmentGroup'
+  kind: 'AzureCLI'
+  location: resourceGroup().location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userIdentity.id}' : {}
+    }
+  }
+  properties: {
+    azCliVersion: '2.9.1'
+    retentionInterval: 'P1D'
+    scriptContent: 'az extension add --name azure-iot; az iot dps enrollment-group create -g ${resourceGroup().name} --dps-name ${dps.name} --enrollment-id ${groupEnrollmentId}'
+  }
+  dependsOn:[
+    dpsUserIdentityRoleAssignment
+  ]
 }
 
 resource tsiStorageAccount 'Microsoft.Storage/storageAccounts@2018-02-01' = {
