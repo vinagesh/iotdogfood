@@ -47,8 +47,3 @@ Write-Host("`nWriting secrets to KeyVault $keyVaultName")
 $userObjectId = az ad signed-in-user show --query objectId --output tsv
 az keyvault set-policy -g $ResourceGroup --name $keyVaultName --object-id $userObjectId --secret-permissions delete get list set --output none
 az keyvault secret set --vault-name $keyVaultName --name "DpsGroupEnrollmentPrimaryKey" --value $dpsGroupEnrollmentPrimaryKey --output none
-
-# Add persmissions to TSI
-Write-Host("`nAdding reader and contributor permissions to KeyVault $tsiName")
-$userPrincipalName = az ad signed-in-user show --query userPrincipalName --output tsv
-az timeseriesinsights access-policy create --name "tsi" --environment-name $tsiName --description "Adding reader and contributor permissions" --principal-object-id $userPrincipalName --roles Reader Contributor --resource-group $ResourceGroup --output none

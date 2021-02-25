@@ -1,8 +1,4 @@
-param HubName string {
-  metadata: {
-    description: 'The name of the main IoT hub instance.'
-  }
-}
+var HubName = '${resourceGroup().name}-d-hub'
 
 param CloudAppContainerName string {
   default: '${resourceGroup().name}-d-cloudapp'
@@ -46,6 +42,7 @@ param CloudAppContainerImageName string {
   }
 }
 
+var containerRegistryPasswordId = '/subscriptions/d370e64f-339c-46fa-b9c2-da4a4c706ea0/resourceGroups/swIoTShow/providers/Microsoft.ContainerRegistry/registries/swickcontainers'
 var hubKeysId = resourceId('Microsoft.Devices/IotHubs/Iothubkeys', HubName, 'iothubowner')
 resource container 'Microsoft.ContainerInstance/containerGroups@2019-12-01' = {
   name: CloudAppContainerName
@@ -82,7 +79,7 @@ resource container 'Microsoft.ContainerInstance/containerGroups@2019-12-01' = {
       {
         server: '${RegistryServer}'
         username: '${RegistryServerUserName}'
-        password: RegistryServerPassword
+        password: '${listCredentials(containerRegistryPasswordId, '2017-10-01').passwords[0].value}'
       }
     ]
     ipAddress: {

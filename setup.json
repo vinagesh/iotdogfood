@@ -1,7 +1,14 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {},
+  "parameters": {
+    "userPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "The user user principal Id. Ex: username.microsoft.com"
+      }
+    }
+  },
   "functions": [],
   "variables": {
     "KeyVaultName": "[format('{0}-d-kv', resourceGroup().name)]",
@@ -14,7 +21,8 @@
     "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]",
     "eventHubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'service')]",
     "dpsKeysId": "[resourceId('Microsoft.Devices/ProvisioningServices/keys', variables('DpsName'), 'provisioningserviceowner')]",
-    "azureMapsKeysId": "[resourceId('Microsoft.Maps/accounts', variables('AzureMapsAccountName'))]"
+    "azureMapsKeysId": "[resourceId('Microsoft.Maps/accounts', variables('AzureMapsAccountName'))]",
+    "containerRegistryPasswordId": "/subscriptions/d370e64f-339c-46fa-b9c2-da4a4c706ea0/resourceGroups/swIoTShow/providers/Microsoft.ContainerRegistry/registries/swickcontainers"
   },
   "resources": [
     {
@@ -144,6 +152,20 @@
       ]
     },
     {
+      "type": "Microsoft.TimeSeriesInsights/environments/accessPolicies",
+      "apiVersion": "2020-05-15",
+      "name": "[format('{0}/readerAccessPolicy1', variables('TsiName'))]",
+      "properties": {
+        "principalObjectId": "[parameters('userPrincipalId')]",
+        "roles": [
+          "Reader"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.TimeSeriesInsights/environments', variables('TsiName'))]"
+      ]
+    },
+    {
       "type": "Microsoft.TimeSeriesInsights/environments/eventsources",
       "apiVersion": "2020-05-15",
       "name": "[format('{0}/dogfoodsource', variables('TsiName'))]",
@@ -239,8 +261,8 @@
         "value": "[format('{0}', reference(resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))).idScope)]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
-        "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]"
+        "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
       ]
     },
     {
@@ -260,6 +282,17 @@
       "name": "[concat(format('{0}', variables('KeyVaultName')), '/AzureMapsPrimaryKey')]",
       "properties": {
         "value": "[format('{0}', listkeys(variables('azureMapsKeysId'), '2020-02-01-preview').primaryKey)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[concat(format('{0}', variables('KeyVaultName')), '/ContainerRegistryPassword')]",
+      "properties": {
+        "value": "[format('{0}', listCredentials(variables('containerRegistryPasswordId'), '2017-10-01').passwords[0].value)]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"

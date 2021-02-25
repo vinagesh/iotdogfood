@@ -2,12 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "HubName": {
-      "type": "string",
-      "metadata": {
-        "description": "The name of the main IoT hub instance."
-      }
-    },
     "CloudAppContainerName": {
       "type": "string",
       "metadata": {
@@ -52,7 +46,9 @@
   },
   "functions": [],
   "variables": {
-    "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', parameters('HubName'), 'iothubowner')]"
+    "HubName": "[format('{0}-d-hub', resourceGroup().name)]",
+    "containerRegistryPasswordId": "/subscriptions/d370e64f-339c-46fa-b9c2-da4a4c706ea0/resourceGroups/swIoTShow/providers/Microsoft.ContainerRegistry/registries/swickcontainers",
+    "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]"
   },
   "resources": [
     {
@@ -81,7 +77,7 @@
               "environmentVariables": [
                 {
                   "name": "IotHubConnectionString",
-                  "value": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', parameters('HubName'), listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]"
+                  "value": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', variables('HubName'), listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]"
                 }
               ]
             }
@@ -92,7 +88,7 @@
           {
             "server": "[format('{0}', parameters('RegistryServer'))]",
             "username": "[format('{0}', parameters('RegistryServerUserName'))]",
-            "password": "[parameters('RegistryServerPassword')]"
+            "password": "[format('{0}', listCredentials(variables('containerRegistryPasswordId'), '2017-10-01').passwords[0].value)]"
           }
         ],
         "ipAddress": {

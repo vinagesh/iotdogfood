@@ -1,3 +1,9 @@
+param userPrincipalId string {
+  metadata: {
+    description: 'The user user principal Id. Ex: username.microsoft.com'
+  }
+}
+
 var KeyVaultName = '${resourceGroup().name}-d-kv'
 var HubName = '${resourceGroup().name}-d-hub'
 var DpsName = '${resourceGroup().name}-d-dps'
@@ -65,7 +71,7 @@ resource tsiConsumerGroup 'Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerG
   }
 }
 
-resource provisioningService 'Microsoft.Devices/provisioningServices@2017-11-15' = {
+resource dps 'Microsoft.Devices/provisioningServices@2017-11-15' = {
   name: DpsName
   location: resourceGroup().location
   sku: {
@@ -112,6 +118,16 @@ resource tsi 'Microsoft.TimeSeriesInsights/environments@2020-05-15' = {
         name: 'iothub-connection-device-id'
         type: 'String'
       }
+    ]
+  }
+}
+
+resource tsiReaderAccessPolicy 'Microsoft.TimeSeriesInsights/environments/accessPolicies@2020-05-15' = {
+  name: '${tsi.name}/readerAccessPolicy1'
+  properties: {
+    principalObjectId: userPrincipalId
+    roles: [
+      'Reader'
     ]
   }
 }
@@ -193,7 +209,7 @@ resource eventHubKey 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
 resource dpsScopeId 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
   name: concat('${keyVault.name}', '/DpsScopeId')
   properties: {
-    value: '${provisioningService.properties.idScope}'
+    value: '${dps.properties.idScope}'
   }
 }
 
@@ -210,5 +226,13 @@ resource azureMapsPrimaryKey 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
   name: concat('${keyVault.name}', '/AzureMapsPrimaryKey')
   properties: {
     value: '${listkeys(azureMapsKeysId, '2020-02-01-preview').primaryKey}'
+  }
+}
+
+var containerRegistryPasswordId = '/subscriptions/d370e64f-339c-46fa-b9c2-da4a4c706ea0/resourceGroups/swIoTShow/providers/Microsoft.ContainerRegistry/registries/swickcontainers'
+resource containerRegistryPassword 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
+  name: concat('${keyVault.name}', '/ContainerRegistryPassword')
+  properties: {
+    value: '${listCredentials(containerRegistryPasswordId, '2017-10-01').passwords[0].value}'
   }
 }
