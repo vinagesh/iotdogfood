@@ -6,8 +6,8 @@ param userPrincipalId string {
 
 param roleAssignmentName string {
   default: newGuid()
-  metadata: {
-    description: 'The role assignemnt id for creating dps enrollment groups.'
+  metadata: {    
+    description: 'The roleAssignmentName for creation of dps enrollment group. This is an automatically generated GUID and does not need to be changed.'
   }
 }
 
@@ -107,10 +107,8 @@ resource dpsUserIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@
   properties: {
     roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${contriburorRoleDefinitionId}'
     principalId: '${reference(userIdentity.id, '2018-11-30').principalId}'
+    principalType: 'ServicePrincipal'
   }
-  dependsOn: [
-    userIdentity
-  ]
 }
 
 var groupEnrollmentId = 'weatherstations'

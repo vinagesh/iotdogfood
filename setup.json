@@ -11,7 +11,7 @@
     "roleAssignmentName": {
       "type": "string",
       "metadata": {
-        "description": "The role assignemnt id for creating dps enrollment groups."
+        "description": "The roleAssignmentName for creation of dps enrollment group. This is an automatically generated GUID and does not need to be changed."
       },
       "defaultValue": "[newGuid()]"
     }
@@ -134,7 +134,8 @@
       "name": "[parameters('roleAssignmentName')]",
       "properties": {
         "roleDefinitionId": "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}', subscription().subscriptionId, variables('contriburorRoleDefinitionId'))]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName')), '2018-11-30').principalId]"
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName')), '2018-11-30').principalId]",
+        "principalType": "ServicePrincipal"
       },
       "dependsOn": [
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]"
