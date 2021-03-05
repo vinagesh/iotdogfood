@@ -89,13 +89,13 @@ resource dps 'Microsoft.Devices/provisioningServices@2017-11-15' = {
   }
 }
 
-var userIdentityName = 'dpsUserIdentity'
+var userIdentityName = 'userIdentity'
 resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: '${userIdentityName}'
   location: resourceGroup().location
 }
 
-var contriburorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
   properties: {
@@ -220,7 +220,7 @@ resource azureMaps 'Microsoft.Maps/accounts@2020-02-01-preview' = {
 resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
   name: KeyVaultName
   location: resourceGroup().location
-  properties: {
+    properties: {    
     enabledForDeployment: false
     enabledForTemplateDeployment: false
     enabledForDiskEncryption: false
