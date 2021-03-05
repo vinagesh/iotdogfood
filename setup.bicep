@@ -228,6 +228,13 @@ resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
   }
 }
 
+resource iotHubConnectionString 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
+  name: concat('${keyVault.name}', '/IotHubConnectionString')
+  properties: {
+    value: 'HostName=${iotHub.name}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=${listkeys(hubKeysId, '2019-11-04').primaryKey}'
+  }
+}
+
 resource eventHubEndpoint 'Microsoft.KeyVault/vaults/secrets@2019-09-01' = {
   name: concat('${keyVault.name}', '/EventHubEndpoint')
   properties: {

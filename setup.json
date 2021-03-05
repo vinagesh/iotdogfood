@@ -273,6 +273,18 @@
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2019-09-01",
+      "name": "[concat(variables('KeyVaultName'), '/IotHubConnectionString')]",
+      "properties": {
+        "value": "[format('HostName={0}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey={1}', variables('HubName'), listkeys(variables('hubKeysId'), '2019-11-04').primaryKey)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Devices/IotHubs', variables('HubName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
       "name": "[concat(variables('KeyVaultName'), '/EventHubEndpoint')]",
       "properties": {
         "value": "[reference(resourceId('Microsoft.Devices/IotHubs', variables('HubName'))).eventHubEndpoints.events.endpoint]"
