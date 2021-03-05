@@ -94,7 +94,7 @@ resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-
   location: resourceGroup().location
 }
 
-var roleAssignmentName = guid(uniqueString((resourceGroup().name)))
+var roleAssignmentName = guid(resourceGroup().name)
 var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
@@ -204,6 +204,21 @@ resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
     enabledForTemplateDeployment: false
     enabledForDiskEncryption: false
     accessPolicies: [
+      {
+        objectId: '${reference(userIdentity.id, '2018-11-30').principalId}'
+        tenantId: subscription().tenantId
+        permissions: {
+          secrets: [
+            'all'
+          ]
+          certificates: [
+            'all'
+          ]
+          keys: [
+            'all'
+          ]
+        }
+      }
     ]
     tenantId: subscription().tenantId
     sku: {
