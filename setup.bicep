@@ -4,7 +4,6 @@ param userPrincipalId string {
   }
 }
 
-var roleAssignmentName = '90a6a1c4-290e-4e76-b20e-428c3796c37e'
 var KeyVaultName = '${resourceGroup().name}-d-kv'
 var HubName = '${resourceGroup().name}-d-hub'
 var DpsName = '${resourceGroup().name}-d-dps'
@@ -95,7 +94,8 @@ resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-
   location: resourceGroup().location
 }
 
-var ownerRoleDefinitionId = 'f0a0a642-7a89-4841-98bd-3968f56af29e'
+var roleAssignmentName = 'f0a0a642-7a89-4841-98bd-3968f56af29e'
+var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
   properties: {

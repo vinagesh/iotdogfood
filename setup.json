@@ -11,7 +11,6 @@
   },
   "functions": [],
   "variables": {
-    "roleAssignmentName": "90a6a1c4-290e-4e76-b20e-428c3796c37e",
     "KeyVaultName": "[format('{0}-d-kv', resourceGroup().name)]",
     "HubName": "[format('{0}-d-hub', resourceGroup().name)]",
     "DpsName": "[format('{0}-d-dps', resourceGroup().name)]",
@@ -20,6 +19,7 @@
     "AzureMapsAccountName": "[format('{0}-d-maps', resourceGroup().name)]",
     "tsiGroupName": "tsi",
     "userIdentityName": "userIdentity",
+    "roleAssignmentName": "f0a0a642-7a89-4841-98bd-3968f56af29e",
     "ownerRoleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "groupEnrollmentId": "weatherstations",
     "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]",
