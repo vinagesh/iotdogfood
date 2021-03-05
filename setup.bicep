@@ -99,7 +99,7 @@ var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
   properties: {
-    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${contriburorRoleDefinitionId}'
+    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${ownerRoleDefinitionId}'
     principalId: '${reference(userIdentity.id, '2018-11-30').principalId}'
     principalType: 'ServicePrincipal'
   }

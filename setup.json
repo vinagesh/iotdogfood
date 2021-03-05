@@ -19,8 +19,8 @@
     "TsiStorageAccountName": "[format('{0}dstorage', resourceGroup().name)]",
     "AzureMapsAccountName": "[format('{0}-d-maps', resourceGroup().name)]",
     "tsiGroupName": "tsi",
-    "userIdentityName": "dpsUserIdentity",
-    "contriburorRoleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c",
+    "userIdentityName": "userIdentity",
+    "ownerRoleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "groupEnrollmentId": "weatherstations",
     "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]",
     "eventHubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'service')]",
@@ -127,7 +127,7 @@
       "apiVersion": "2018-09-01-preview",
       "name": "[variables('roleAssignmentName')]",
       "properties": {
-        "roleDefinitionId": "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}', subscription().subscriptionId, variables('contriburorRoleDefinitionId'))]",
+        "roleDefinitionId": "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}', subscription().subscriptionId, variables('ownerRoleDefinitionId'))]",
         "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName')), '2018-11-30').principalId]",
         "principalType": "ServicePrincipal"
       },
