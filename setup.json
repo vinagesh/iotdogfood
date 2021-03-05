@@ -7,17 +7,11 @@
       "metadata": {
         "description": "The user user principal Id. Ex: username.microsoft.com"
       }
-    },
-    "roleAssignmentName": {
-      "type": "string",
-      "metadata": {
-        "description": "The roleAssignmentName for creation of dps enrollment group. This is an automatically generated GUID and does not need to be changed."
-      },
-      "defaultValue": "[newGuid()]"
     }
   },
   "functions": [],
   "variables": {
+    "roleAssignmentName": "90a6a1c4-290e-4e76-b20e-428c3796c37e",
     "KeyVaultName": "[format('{0}-d-kv', resourceGroup().name)]",
     "HubName": "[format('{0}-d-hub', resourceGroup().name)]",
     "DpsName": "[format('{0}-d-dps', resourceGroup().name)]",
@@ -131,7 +125,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2018-09-01-preview",
-      "name": "[parameters('roleAssignmentName')]",
+      "name": "[variables('roleAssignmentName')]",
       "properties": {
         "roleDefinitionId": "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}', subscription().subscriptionId, variables('contriburorRoleDefinitionId'))]",
         "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName')), '2018-11-30').principalId]",
@@ -161,7 +155,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]",
-        "[resourceId('Microsoft.Authorization/roleAssignments', parameters('roleAssignmentName'))]"
+        "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentName'))]"
       ]
     },
     {
@@ -183,7 +177,8 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]"
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]",
+        "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentName'))]"
       ]
     },
     {

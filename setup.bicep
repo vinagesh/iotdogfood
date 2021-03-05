@@ -4,13 +4,7 @@ param userPrincipalId string {
   }
 }
 
-param roleAssignmentName string {
-  default: newGuid()
-  metadata: {    
-    description: 'The roleAssignmentName for creation of dps enrollment group. This is an automatically generated GUID and does not need to be changed.'
-  }
-}
-
+var roleAssignmentName = '90a6a1c4-290e-4e76-b20e-428c3796c37e'
 var KeyVaultName = '${resourceGroup().name}-d-kv'
 var HubName = '${resourceGroup().name}-d-hub'
 var DpsName = '${resourceGroup().name}-d-dps'
@@ -148,6 +142,7 @@ resource keyVaultAccessPoicyCreationScript 'Microsoft.Resources/deploymentScript
     scriptContent: 'az keyvault set-policy -n ${KeyVaultName} --secret-permissions get list set --upn ${userPrincipalId}'
   }
   dependsOn:[
+    userIdentityRoleAssignment
     keyVault
   ]
 }
