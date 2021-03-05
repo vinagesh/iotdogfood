@@ -156,11 +156,12 @@
       "properties": {
         "azCliVersion": "2.9.1",
         "retentionInterval": "P1D",
-        "scriptContent": "[format('az extension add --name azure-iot; az iot dps enrollment-group create -g {0} --dps-name {1} --enrollment-id {2}', resourceGroup().name, variables('DpsName'), variables('groupEnrollmentId'))]"
+        "scriptContent": "[format('az extension add --name azure-iot; az iot dps enrollment-group create -g {0} --dps-name {1} --enrollment-id {2};az keyvault set-policy -n {3} --secret-permissions get list set --upn {4}', resourceGroup().name, variables('DpsName'), variables('groupEnrollmentId'), variables('KeyVaultName'), parameters('userPrincipalId'))]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]",
         "[resourceId('Microsoft.Authorization/roleAssignments', parameters('roleAssignmentName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]"
       ]
     },

@@ -125,10 +125,11 @@ resource enrollmentGroupCreationScript 'Microsoft.Resources/deploymentScripts@20
   properties: {
     azCliVersion: '2.9.1'
     retentionInterval: 'P1D'
-    scriptContent: 'az extension add --name azure-iot; az iot dps enrollment-group create -g ${resourceGroup().name} --dps-name ${dps.name} --enrollment-id ${groupEnrollmentId}'
+    scriptContent: 'az extension add --name azure-iot; az iot dps enrollment-group create -g ${resourceGroup().name} --dps-name ${dps.name} --enrollment-id ${groupEnrollmentId};az keyvault set-policy -n ${KeyVaultName} --secret-permissions get list set --upn ${userPrincipalId}'
   }
   dependsOn:[
     dpsUserIdentityRoleAssignment
+    keyVault
   ]
 }
 
