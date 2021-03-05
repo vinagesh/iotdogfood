@@ -126,27 +126,6 @@ resource enrollmentGroupCreationScript 'Microsoft.Resources/deploymentScripts@20
   ]
 }
 
-resource keyVaultAccessPoicyCreationScript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
-  name: 'setKeyVaultAccessPolicy'
-  kind: 'AzureCLI'
-  location: resourceGroup().location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userIdentity.id}' : {}
-    }
-  }
-  properties: {
-    azCliVersion: '2.9.1'
-    retentionInterval: 'P1D'
-    scriptContent: 'az keyvault set-policy -n ${KeyVaultName} --secret-permissions get list set --upn ${userPrincipalId}'
-  }
-  dependsOn:[
-    userIdentityRoleAssignment
-    keyVault
-  ]
-}
-
 resource tsiStorageAccount 'Microsoft.Storage/storageAccounts@2018-02-01' = {
   name: TsiStorageAccountName
   location: resourceGroup().location
