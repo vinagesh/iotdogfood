@@ -159,29 +159,6 @@
       ]
     },
     {
-      "type": "Microsoft.Resources/deploymentScripts",
-      "apiVersion": "2020-10-01",
-      "name": "setKeyVaultAccessPolicy",
-      "kind": "AzureCLI",
-      "location": "[resourceGroup().location]",
-      "identity": {
-        "type": "UserAssigned",
-        "userAssignedIdentities": {
-          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]": {}
-        }
-      },
-      "properties": {
-        "azCliVersion": "2.9.1",
-        "retentionInterval": "P1D",
-        "scriptContent": "[format('az keyvault set-policy -n {0} --secret-permissions get list set --upn {1}', variables('KeyVaultName'), parameters('userPrincipalId'))]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]",
-        "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentName'))]"
-      ]
-    },
-    {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2018-02-01",
       "name": "[variables('TsiStorageAccountName')]",
