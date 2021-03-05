@@ -204,6 +204,21 @@ resource keyVault 'Microsoft.KeyVault/vaults@2018-02-14' = {
     enabledForTemplateDeployment: false
     enabledForDiskEncryption: false
     accessPolicies: [
+      {
+        objectId: '${reference(userIdentity.id, '2018-11-30').principalId}'
+        tenantId: subscription().tenantId
+        permissions: {
+          secrets: [
+            'all'
+          ]
+          certificates: [
+            'all'
+          ]
+          keys: [
+            'all'
+          ]
+        }
+      }
     ]
     tenantId: subscription().tenantId
     sku: {

@@ -249,7 +249,23 @@
         "enabledForDeployment": false,
         "enabledForTemplateDeployment": false,
         "enabledForDiskEncryption": false,
-        "accessPolicies": [],
+        "accessPolicies": [
+          {
+            "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName')), '2018-11-30').principalId]",
+            "tenantId": "[subscription().tenantId]",
+            "permissions": {
+              "secrets": [
+                "all"
+              ],
+              "certificates": [
+                "all"
+              ],
+              "keys": [
+                "all"
+              ]
+            }
+          }
+        ],
         "tenantId": "[subscription().tenantId]",
         "sku": {
           "name": "standard",
@@ -262,7 +278,10 @@
           "ipRules": [],
           "virtualNetworkRules": []
         }
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]"
+      ]
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
