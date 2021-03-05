@@ -156,11 +156,32 @@
       "properties": {
         "azCliVersion": "2.9.1",
         "retentionInterval": "P1D",
-        "scriptContent": "[format('az extension add --name azure-iot; az iot dps enrollment-group create -g {0} --dps-name {1} --enrollment-id {2};az keyvault set-policy -n {3} --secret-permissions get list set --upn {4}', resourceGroup().name, variables('DpsName'), variables('groupEnrollmentId'), variables('KeyVaultName'), parameters('userPrincipalId'))]"
+        "scriptContent": "[format('az extension add --name azure-iot; az iot dps enrollment-group create -g {0} --dps-name {1} --enrollment-id {2}', resourceGroup().name, variables('DpsName'), variables('groupEnrollmentId'))]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Devices/provisioningServices', variables('DpsName'))]",
-        "[resourceId('Microsoft.Authorization/roleAssignments', parameters('roleAssignmentName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]",
+        "[resourceId('Microsoft.Authorization/roleAssignments', parameters('roleAssignmentName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "setKeyVaultAccessPolicy",
+      "kind": "AzureCLI",
+      "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]": {}
+        }
+      },
+      "properties": {
+        "azCliVersion": "2.9.1",
+        "retentionInterval": "P1D",
+        "scriptContent": "[format('az keyvault set-policy -n {0} --secret-permissions get list set --upn {1}', variables('KeyVaultName'), parameters('userPrincipalId'))]"
+      },
+      "dependsOn": [
         "[resourceId('Microsoft.KeyVault/vaults', variables('KeyVaultName'))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userIdentityName'))]"
       ]

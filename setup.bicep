@@ -102,7 +102,7 @@ resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-
 }
 
 var contriburorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
-resource dpsUserIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
+resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
   properties: {
     roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${contriburorRoleDefinitionId}'
@@ -125,10 +125,29 @@ resource enrollmentGroupCreationScript 'Microsoft.Resources/deploymentScripts@20
   properties: {
     azCliVersion: '2.9.1'
     retentionInterval: 'P1D'
-    scriptContent: 'az extension add --name azure-iot; az iot dps enrollment-group create -g ${resourceGroup().name} --dps-name ${dps.name} --enrollment-id ${groupEnrollmentId};az keyvault set-policy -n ${KeyVaultName} --secret-permissions get list set --upn ${userPrincipalId}'
+    scriptContent: 'az extension add --name azure-iot; az iot dps enrollment-group create -g ${resourceGroup().name} --dps-name ${dps.name} --enrollment-id ${groupEnrollmentId}'
   }
   dependsOn:[
-    dpsUserIdentityRoleAssignment
+    userIdentityRoleAssignment
+  ]
+}
+
+resource keyVaultAccessPoicyCreationScript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
+  name: 'setKeyVaultAccessPolicy'
+  kind: 'AzureCLI'
+  location: resourceGroup().location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userIdentity.id}' : {}
+    }
+  }
+  properties: {
+    azCliVersion: '2.9.1'
+    retentionInterval: 'P1D'
+    scriptContent: 'az keyvault set-policy -n ${KeyVaultName} --secret-permissions get list set --upn ${userPrincipalId}'
+  }
+  dependsOn:[
     keyVault
   ]
 }
