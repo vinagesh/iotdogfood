@@ -95,7 +95,7 @@ resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-
   location: resourceGroup().location
 }
 
-var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+var ownerRoleDefinitionId = 'f0a0a642-7a89-4841-98bd-3968f56af29e'
 resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
   name: '${roleAssignmentName}'
   properties: {
