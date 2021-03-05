@@ -19,7 +19,7 @@
     "AzureMapsAccountName": "[format('{0}-d-maps', resourceGroup().name)]",
     "tsiGroupName": "tsi",
     "userIdentityName": "userIdentity",
-    "roleAssignmentName": "f0a0a642-7a89-4841-98bd-3968f56af29e",
+    "roleAssignmentName": "[guid(uniqueString(resourceGroup().name))]",
     "ownerRoleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "groupEnrollmentId": "weatherstations",
     "hubKeysId": "[resourceId('Microsoft.Devices/IotHubs/Iothubkeys', variables('HubName'), 'iothubowner')]",
