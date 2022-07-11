@@ -13,7 +13,4 @@ resource runscript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
     retentionInterval: 'P1D'
     primaryScriptUri: 'https://raw.githubusercontent.com/vinagesh/iotdogfood/main/script.ps1'  
   }
-  dependsOn:[
-    userIdentityRoleAssignment
-  ]
 }
