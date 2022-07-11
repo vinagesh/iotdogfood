@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.8.9.13224",
+      "templateHash": "12134153422203264870"
+    }
+  },
+  "variables": {
+    "userIdentityName": "userIdentity",
+    "roleAssignmentName": "[guid(resourceGroup().name)]",
+    "ownerRoleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2018-11-30",
+      "name": "[format('{0}', variables('userIdentityName'))]",
+      "location": "[resourceGroup().location]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2018-09-01-preview",
+      "name": "[format('{0}', variables('roleAssignmentName'))]",
+      "properties": {
+        "roleDefinitionId": "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}', subscription().subscriptionId, variables('ownerRoleDefinitionId'))]",
+        "principalId": "[format('{0}', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}', variables('userIdentityName'))), '2018-11-30').principalId)]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}', variables('userIdentityName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "enablesecurity",
+      "kind": "AzureCLI",
+      "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}', variables('userIdentityName'))))]": {}
+        }
+      },
+      "properties": {
+        "azCliVersion": "2.9.1",
+        "retentionInterval": "P1D",
+        "primaryScriptUri": "https://raw.githubusercontent.com/vinagesh/iotdogfood/main/script.ps1"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}', variables('userIdentityName')))]",
+        "[resourceId('Microsoft.Authorization/roleAssignments', format('{0}', variables('roleAssignmentName')))]"
+      ]
+    }
+  ]
+}
