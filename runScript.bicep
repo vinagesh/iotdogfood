@@ -1,20 +1,3 @@
-var userIdentityName = 'userIdentity'
-resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: '${userIdentityName}'
-  location: resourceGroup().location
-}
-
-var roleAssignmentName = guid(resourceGroup().name)
-var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
-resource userIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2018-09-01-preview' = {
-  name: '${roleAssignmentName}'
-  properties: {
-    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${ownerRoleDefinitionId}'
-    principalId: '${reference(userIdentity.id, '2018-11-30').principalId}'
-    principalType: 'ServicePrincipal'
-  }
-}
-
 resource runscript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
   name: 'enablesecurity'
   kind: 'AzureCLI'
@@ -22,7 +5,7 @@ resource runscript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${userIdentity.id}' : {}
+      '/subscriptions/53cd450b-b108-4e6e-b048-f63c1dcc8c8f/resourcegroups/vinagesh-test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/vinagesh-test-msi' : {}
     }
   }
   properties: {
